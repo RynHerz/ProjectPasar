@@ -949,7 +949,7 @@
               ✨ Langkah 2 dari 2: Gambar Nota Siap
             </div>
             <h3>🧾 Gambar Nota Pesanan</h3>
-            <p id="successText">Periksa nota Anda di bawah, lalu klik tombol hijau untuk mengirimnya ke WhatsApp toko.
+            <p id="successText">Periksa nota Anda di atas, lalu klik tombol hijau untuk langsung mengirim pesanan ke WhatsApp Bu Pudak.
             </p>
 
             <div class="receipt-preview-box">
@@ -957,11 +957,11 @@
             </div>
 
             <div class="receipt-actions">
-              <button type="button" class="btn-action-primary" id="btnShareWaImg">
-                📲 Kirim Gambar Nota ke WhatsApp Penjual
+              <button type="button" class="btn-action-primary" id="btnShareWaImg" style="font-size:14.5px; padding:14px; background:#25D366; color:white;">
+                💬 Kirim Pesanan ke WhatsApp Bu Pudak
               </button>
               <button type="button" class="btn-action-secondary" id="btnDownloadImg">
-                📥 Unduh / Simpan Gambar (.PNG)
+                📥 Unduh / Simpan Gambar Nota (.PNG)
               </button>
               <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:2px;">
                 <button type="button" class="btn-action-secondary" id="btnEditPesanan" style="border-style:dashed;">
@@ -1058,7 +1058,7 @@
        ====================================================== */
     const NAMA_TOKO = "Toko Bu Pudak";
     const NOMOR_WA_PENJUAL = "62895394603282"; // Nomor WhatsApp Penjual (+62 895-3946-03282)
-    const PIN_PEMILIK = "0000";
+    const PIN_PEMILIK = "1234";
     const STORAGE_ORDERS_KEY = "bu_pudak_orders_v1";
 
     const PRODUK = [
@@ -1629,34 +1629,11 @@
       link.click();
     }
 
-    async function shareReceiptImage(order) {
-      const canvas = generateReceiptCanvas(order);
-
-      // Native File Sharing (Android / iOS / Modern Desktop)
-      if (navigator.share && navigator.canShare) {
-        try {
-          const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-          const file = new File([blob], `nota-${order.id}.png`, { type: 'image/png' });
-
-          if (navigator.canShare({ files: [file] })) {
-            await navigator.share({
-              title: `Nota Pesanan #${order.id} - ${NAMA_TOKO}`,
-              text: buildWaMessage(order),
-              files: [file]
-            });
-            return;
-          }
-        } catch (err) {
-          if (err.name !== 'AbortError') {
-            console.log('Native share error, fallback to WhatsApp web:', err);
-          }
-        }
-      }
-
-      // Fallback: Download image and open WhatsApp
-      downloadReceiptImage(order);
+    function shareReceiptImage(order) {
+      // Langsung buka chat WhatsApp Toko Bu Pudak (+62 895-3946-03282) tanpa dialog sistem OS
       const msg = encodeURIComponent(buildWaMessage(order));
-      window.open(`https://api.whatsapp.com/send?phone=${NOMOR_WA_PENJUAL}&text=${msg}`, "_blank");
+      const waUrl = `https://api.whatsapp.com/send?phone=${NOMOR_WA_PENJUAL}&text=${msg}`;
+      window.open(waUrl, "_blank");
     }
 
     /* ---------- Alur Proses Pesanan (Langkah 1 ke Langkah 2) ---------- */
