@@ -1270,12 +1270,14 @@
 
     /* ---------- Database Cloud Sync (Supabase & LocalStorage Dual-Engine) ---------- */
     const SUPABASE_CONFIG_KEY = "bu_pudak_supabase_cfg";
+    const DEFAULT_SUPABASE_URL = "https://ijqopurrtoyhgxtmsimy.supabase.co";
+    const DEFAULT_SUPABASE_KEY = "sb_publishable_wJ-K-hw_zy1UU1fZtKP9gA_G0qD42dE";
     let supabaseClient = null;
 
     function initSupabase() {
       const savedCfg = JSON.parse(localStorage.getItem(SUPABASE_CONFIG_KEY) || "{}");
-      const url = savedCfg.url || window.DEFAULT_SUPABASE_URL || "";
-      const key = savedCfg.key || window.DEFAULT_SUPABASE_KEY || "";
+      const url = savedCfg.url || DEFAULT_SUPABASE_URL;
+      const key = savedCfg.key || DEFAULT_SUPABASE_KEY;
 
       if (url && key && window.supabase) {
         try {
