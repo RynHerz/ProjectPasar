@@ -1795,6 +1795,7 @@
       document.getElementById("customerView").style.display = "none";
       document.getElementById("adminView").style.display = "block";
       document.getElementById("mobileBar").style.display = "none";
+      document.getElementById("orderList").innerHTML = `<div class="loading-state">⏳ Mengambil pesanan terbaru dari Cloud...</div>`;
 
       const orders = await muatRiwayat();
       renderOrderList(orders);
@@ -1911,6 +1912,15 @@
     initSupabase();
     renderProducts();
     renderNota();
+
+    // Auto-sync berkala tiap 4 detik saat admin sedang dibuka
+    setInterval(async () => {
+      const adminView = document.getElementById("adminView");
+      if (adminView && adminView.style.display === "block") {
+        const orders = await muatRiwayat();
+        renderOrderList(orders);
+      }
+    }, 4000);
   </script>
 </body>
 
