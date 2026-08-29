@@ -1,0 +1,13 @@
+{
+  "name": "toko-bumbu-app",
+  "version": "1.0.0",
+  "description": "Aplikasi Web Katalog Belanja Bumbu Pasar, Generator Nota Digital & Integrasi WhatsApp",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": ["toko-bumbu", "nota-digital", "pasar-tradisional", "whatsapp-order"],
+  "author": "Antigravity",
+  "license": "MIT"
+}

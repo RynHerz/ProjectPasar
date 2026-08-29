@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "name": "toko-bu-pudak",
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ]
+}
