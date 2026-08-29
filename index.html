@@ -1276,8 +1276,8 @@
 
     function initSupabase() {
       const savedCfg = JSON.parse(localStorage.getItem(SUPABASE_CONFIG_KEY) || "{}");
-      const url = savedCfg.url || DEFAULT_SUPABASE_URL;
-      const key = savedCfg.key || DEFAULT_SUPABASE_KEY;
+      const url = (savedCfg && savedCfg.url && savedCfg.url.trim()) ? savedCfg.url.trim() : DEFAULT_SUPABASE_URL;
+      const key = (savedCfg && savedCfg.key && savedCfg.key.trim()) ? savedCfg.key.trim() : DEFAULT_SUPABASE_KEY;
 
       if (url && key && window.supabase) {
         try {
@@ -1349,7 +1349,12 @@
     }
 
     async function muatRiwayat() {
-      // Prioritas 1: Ambil data terbaru dari Supabase Cloud
+      // Pastikan Supabase Client sudah aktif
+      if (!supabaseClient) {
+        initSupabase();
+      }
+
+      // Prioritas 1: Ambil data live langsung dari Supabase Cloud
       if (supabaseClient) {
         try {
           const { data, error } = await supabaseClient
@@ -1358,7 +1363,7 @@
             .order('waktu', { ascending: false });
 
           if (!error && data) {
-            return data.map(d => ({
+            const parsed = data.map(d => ({
               id: d.id,
               waktu: d.waktu,
               waktuFormatted: d.waktu_formatted || d.waktu,
@@ -1374,13 +1379,17 @@
               total: Number(d.total),
               status: d.status
             }));
+
+            // Perbarui cache lokal dengan data cloud terbaru
+            localStorage.setItem(STORAGE_ORDERS_KEY, JSON.stringify(parsed));
+            return parsed;
           }
         } catch (e) {
-          console.warn("Supabase fetch failed, fallback ke lokal:", e);
+          console.warn("Supabase fetch notice, fallback ke lokal:", e);
         }
       }
 
-      // Prioritas 2: Fallback ke storage lokal
+      // Prioritas 2: Fallback ke storage lokal jika sedang offline
       try {
         const data = JSON.parse(localStorage.getItem(STORAGE_ORDERS_KEY) || "[]");
         return Array.isArray(data) ? data : [];
