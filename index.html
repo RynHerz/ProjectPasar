@@ -1792,11 +1792,14 @@
 
     document.getElementById("clearHistoryBtn").addEventListener("click", hapusSemuaRiwayat);
 
+    function initSupabase() {
+      updateSupabaseStatusUI(true);
+    }
+
     // Supabase Modal Event Listeners
     document.getElementById("btnConfigSupabase").addEventListener("click", () => {
-      const savedCfg = JSON.parse(localStorage.getItem(SUPABASE_CONFIG_KEY) || "{}");
-      document.getElementById("sbUrlInput").value = savedCfg.url || "";
-      document.getElementById("sbKeyInput").value = savedCfg.key || "";
+      document.getElementById("sbUrlInput").value = "https://ijqopurrtoyhgxtmsimy.supabase.co";
+      document.getElementById("sbKeyInput").value = SUPABASE_KEY;
       document.getElementById("supabaseModal").style.display = "flex";
     });
 
@@ -1806,30 +1809,15 @@
 
     document.getElementById("supabaseConfigForm").addEventListener("submit", async (e) => {
       e.preventDefault();
-      const url = document.getElementById("sbUrlInput").value.trim();
-      const key = document.getElementById("sbKeyInput").value.trim();
-
-      if (!url || !key) return;
-
-      localStorage.setItem(SUPABASE_CONFIG_KEY, JSON.stringify({ url, key }));
-      initSupabase();
       document.getElementById("supabaseModal").style.display = "none";
-      alert("✅ Berhasil menghubungkan Database Supabase Cloud!");
+      alert("✅ Database Supabase Cloud Aktif & Terhubung!");
 
       const orders = await muatRiwayat();
       renderOrderList(orders);
     });
 
     document.getElementById("btnDisconnectSupabase").addEventListener("click", async () => {
-      if (confirm("Putuskan koneksi ke Supabase Cloud?")) {
-        localStorage.removeItem(SUPABASE_CONFIG_KEY);
-        supabaseClient = null;
-        updateSupabaseStatusUI(false);
-        document.getElementById("supabaseModal").style.display = "none";
-        alert("Koneksi Supabase diputuskan. Menggunakan mode penyimpanan lokal.");
-        const orders = await muatRiwayat();
-        renderOrderList(orders);
-      }
+      document.getElementById("supabaseModal").style.display = "none";
     });
 
     // Close modal when clicking outside box
