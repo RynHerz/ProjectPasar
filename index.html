@@ -949,7 +949,8 @@
               ✨ Langkah 2 dari 2: Gambar Nota Siap
             </div>
             <h3>🧾 Gambar Nota Pesanan</h3>
-            <p id="successText">Periksa nota Anda di atas, lalu klik tombol hijau untuk langsung mengirim pesanan ke WhatsApp Bu Pudak.
+            <p id="successText">Periksa nota Anda di atas, lalu klik tombol hijau untuk langsung mengirim pesanan ke
+              WhatsApp Bu Pudak.
             </p>
 
             <div class="receipt-preview-box">
@@ -957,7 +958,8 @@
             </div>
 
             <div class="receipt-actions">
-              <button type="button" class="btn-action-primary" id="btnShareWaImg" style="font-size:14.5px; padding:14px; background:#25D366; color:white;">
+              <button type="button" class="btn-action-primary" id="btnShareWaImg"
+                style="font-size:14.5px; padding:14px; background:#25D366; color:white;">
                 💬 Kirim Pesanan ke WhatsApp Bu Pudak
               </button>
               <button type="button" class="btn-action-secondary" id="btnDownloadImg">
@@ -997,13 +999,18 @@
       </div>
 
       <!-- Cloud Sync Status Card -->
-      <div id="supabaseStatusCard" style="background:var(--paper); border:1px solid var(--line); border-radius:10px; padding:12px 14px; margin-bottom:16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+      <div id="supabaseStatusCard"
+        style="background:var(--paper); border:1px solid var(--line); border-radius:10px; padding:12px 14px; margin-bottom:16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
         <div>
           <strong id="supabaseStatusTitle">☁️ Sinkronisasi Cloud:</strong>
-          <span id="supabaseStatusBadge" style="display:inline-block; margin-left:6px; font-size:11px; padding:3px 8px; border-radius:12px; font-weight:700; background:#fef3c7; color:#b45309;">Belum Tersambung (Lokal)</span>
-          <p style="margin:3px 0 0; font-size:12px; color:var(--ink-soft);" id="supabaseStatusDesc">Sambungkan ke Supabase (Gratis) agar pesanan dari semua HP pembeli otomatis masuk ke sini secara real-time.</p>
+          <span id="supabaseStatusBadge"
+            style="display:inline-block; margin-left:6px; font-size:11px; padding:3px 8px; border-radius:12px; font-weight:700; background:#fef3c7; color:#b45309;">Belum
+            Tersambung (Lokal)</span>
+          <p style="margin:3px 0 0; font-size:12px; color:var(--ink-soft);" id="supabaseStatusDesc">Sambungkan ke
+            Supabase (Gratis) agar pesanan dari semua HP pembeli otomatis masuk ke sini secara real-time.</p>
         </div>
-        <button type="button" class="ghost-btn" id="btnConfigSupabase" style="font-size:12px; padding:6px 12px;">⚙️ Hubungkan Supabase</button>
+        <button type="button" class="ghost-btn" id="btnConfigSupabase" style="font-size:12px; padding:6px 12px;">⚙️
+          Hubungkan Supabase</button>
       </div>
 
       <div style="margin-bottom:14px; font-size:13px; color:var(--ink-soft);">
@@ -1017,27 +1024,42 @@
   </div>
 
   <!-- MODAL PENGATURAN SUPABASE -->
-  <div id="supabaseModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center; padding:16px;">
-    <div style="background:var(--paper); max-width:480px; width:100%; border-radius:12px; border:1px solid var(--line); padding:20px; box-shadow:0 10px 30px rgba(0,0,0,0.2);">
+  <div id="supabaseModal"
+    style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center; padding:16px;">
+    <div
+      style="background:var(--paper); max-width:480px; width:100%; border-radius:12px; border:1px solid var(--line); padding:20px; box-shadow:0 10px 30px rgba(0,0,0,0.2);">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
-        <h3 style="margin:0; font-family:'Bricolage Grotesque', sans-serif; font-size:18px;">⚙️ Hubungkan Database Supabase</h3>
-        <button type="button" id="btnCloseSupabaseModal" style="background:none; border:none; font-size:20px; cursor:pointer; color:var(--ink-soft);">✕</button>
+        <h3 style="margin:0; font-family:'Bricolage Grotesque', sans-serif; font-size:18px;">⚙️ Hubungkan Database
+          Supabase</h3>
+        <button type="button" id="btnCloseSupabaseModal"
+          style="background:none; border:none; font-size:20px; cursor:pointer; color:var(--ink-soft);">✕</button>
       </div>
       <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:14px; line-height:1.4;">
-        Masukkan <strong>Project URL</strong> dan <strong>Anon Public Key</strong> dari dashboard Supabase Anda. Setelah terhubung, pesanan dari seluruh pembeli akan masuk secara real-time!
+        Masukkan <strong>Project URL</strong> dan <strong>Anon Public Key</strong> dari dashboard Supabase Anda. Setelah
+        terhubung, pesanan dari seluruh pembeli akan masuk secara real-time!
       </p>
       <form id="supabaseConfigForm" style="display:flex; flex-direction:column; gap:10px;">
         <div>
-          <label style="font-size:11.5px; font-weight:700; color:var(--ink-soft); display:block; margin-bottom:4px;">Project URL:</label>
-          <input type="url" id="sbUrlInput" placeholder="https://xxxxxxxx.supabase.co" style="width:100%; padding:8px 10px; border-radius:6px; border:1px solid var(--line); font-size:13px; font-family:inherit;" required>
+          <label
+            style="font-size:11.5px; font-weight:700; color:var(--ink-soft); display:block; margin-bottom:4px;">Project
+            URL:</label>
+          <input type="url" id="sbUrlInput" placeholder="https://xxxxxxxx.supabase.co"
+            style="width:100%; padding:8px 10px; border-radius:6px; border:1px solid var(--line); font-size:13px; font-family:inherit;"
+            required>
         </div>
         <div>
-          <label style="font-size:11.5px; font-weight:700; color:var(--ink-soft); display:block; margin-bottom:4px;">Anon Key (API Public Key):</label>
-          <input type="text" id="sbKeyInput" placeholder="eyJhbGciOiJIUzI1NiIsIn..." style="width:100%; padding:8px 10px; border-radius:6px; border:1px solid var(--line); font-size:13px; font-family:inherit;" required>
+          <label
+            style="font-size:11.5px; font-weight:700; color:var(--ink-soft); display:block; margin-bottom:4px;">Anon Key
+            (API Public Key):</label>
+          <input type="text" id="sbKeyInput" placeholder="eyJhbGciOiJIUzI1NiIsIn..."
+            style="width:100%; padding:8px 10px; border-radius:6px; border:1px solid var(--line); font-size:13px; font-family:inherit;"
+            required>
         </div>
         <div style="display:flex; gap:8px; margin-top:10px;">
-          <button type="submit" class="send-btn" style="flex:1; margin-top:0; padding:10px; font-size:13.5px;">💾 Simpan &amp; Sambungkan</button>
-          <button type="button" id="btnDisconnectSupabase" class="ghost-btn" style="color:var(--chili); border-color:var(--chili); font-size:12px;">Putuskan</button>
+          <button type="submit" class="send-btn" style="flex:1; margin-top:0; padding:10px; font-size:13.5px;">💾 Simpan
+            &amp; Sambungkan</button>
+          <button type="button" id="btnDisconnectSupabase" class="ghost-btn"
+            style="color:var(--chili); border-color:var(--chili); font-size:12px;">Putuskan</button>
         </div>
       </form>
     </div>
@@ -1057,8 +1079,8 @@
        PENGATURAN TOKO
        ====================================================== */
     const NAMA_TOKO = "Toko Bu Pudak";
-    const NOMOR_WA_PENJUAL = "62895394603282"; // Nomor WhatsApp Penjual (+62 895-3946-03282)
-    const PIN_PEMILIK = "1234";
+    const NOMOR_WA_PENJUAL = "628983155368"; // Nomor WhatsApp Penjual (+62 895-3946-03282)
+    const PIN_PEMILIK = "0000";
     const STORAGE_ORDERS_KEY = "bu_pudak_orders_v1";
 
     const PRODUK = [
