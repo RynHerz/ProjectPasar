@@ -849,6 +849,8 @@
       }
     }
   </style>
+  <!-- Supabase Cloud Database SDK (Realtime Sync) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
 <body>
@@ -994,6 +996,16 @@
         </div>
       </div>
 
+      <!-- Cloud Sync Status Card -->
+      <div id="supabaseStatusCard" style="background:var(--paper); border:1px solid var(--line); border-radius:10px; padding:12px 14px; margin-bottom:16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <div>
+          <strong id="supabaseStatusTitle">☁️ Sinkronisasi Cloud:</strong>
+          <span id="supabaseStatusBadge" style="display:inline-block; margin-left:6px; font-size:11px; padding:3px 8px; border-radius:12px; font-weight:700; background:#fef3c7; color:#b45309;">Belum Tersambung (Lokal)</span>
+          <p style="margin:3px 0 0; font-size:12px; color:var(--ink-soft);" id="supabaseStatusDesc">Sambungkan ke Supabase (Gratis) agar pesanan dari semua HP pembeli otomatis masuk ke sini secara real-time.</p>
+        </div>
+        <button type="button" class="ghost-btn" id="btnConfigSupabase" style="font-size:12px; padding:6px 12px;">⚙️ Hubungkan Supabase</button>
+      </div>
+
       <div style="margin-bottom:14px; font-size:13px; color:var(--ink-soft);">
         Total Pesanan Tercatat: <strong id="adminCountText">0</strong>
       </div>
@@ -1001,6 +1013,33 @@
       <div id="orderList">
         <div class="loading-state">Memuat riwayat pesanan...</div>
       </div>
+    </div>
+  </div>
+
+  <!-- MODAL PENGATURAN SUPABASE -->
+  <div id="supabaseModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center; padding:16px;">
+    <div style="background:var(--paper); max-width:480px; width:100%; border-radius:12px; border:1px solid var(--line); padding:20px; box-shadow:0 10px 30px rgba(0,0,0,0.2);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+        <h3 style="margin:0; font-family:'Bricolage Grotesque', sans-serif; font-size:18px;">⚙️ Hubungkan Database Supabase</h3>
+        <button type="button" id="btnCloseSupabaseModal" style="background:none; border:none; font-size:20px; cursor:pointer; color:var(--ink-soft);">✕</button>
+      </div>
+      <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:14px; line-height:1.4;">
+        Masukkan <strong>Project URL</strong> dan <strong>Anon Public Key</strong> dari dashboard Supabase Anda. Setelah terhubung, pesanan dari seluruh pembeli akan masuk secara real-time!
+      </p>
+      <form id="supabaseConfigForm" style="display:flex; flex-direction:column; gap:10px;">
+        <div>
+          <label style="font-size:11.5px; font-weight:700; color:var(--ink-soft); display:block; margin-bottom:4px;">Project URL:</label>
+          <input type="url" id="sbUrlInput" placeholder="https://xxxxxxxx.supabase.co" style="width:100%; padding:8px 10px; border-radius:6px; border:1px solid var(--line); font-size:13px; font-family:inherit;" required>
+        </div>
+        <div>
+          <label style="font-size:11.5px; font-weight:700; color:var(--ink-soft); display:block; margin-bottom:4px;">Anon Key (API Public Key):</label>
+          <input type="text" id="sbKeyInput" placeholder="eyJhbGciOiJIUzI1NiIsIn..." style="width:100%; padding:8px 10px; border-radius:6px; border:1px solid var(--line); font-size:13px; font-family:inherit;" required>
+        </div>
+        <div style="display:flex; gap:8px; margin-top:10px;">
+          <button type="submit" class="send-btn" style="flex:1; margin-top:0; padding:10px; font-size:13.5px;">💾 Simpan &amp; Sambungkan</button>
+          <button type="button" id="btnDisconnectSupabase" class="ghost-btn" style="color:var(--chili); border-color:var(--chili); font-size:12px;">Putuskan</button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -1229,44 +1268,180 @@
       };
     }
 
-    /* ---------- Local Storage Persistence (ROBUST & PERSISTENT) ---------- */
+    /* ---------- Database Cloud Sync (Supabase & LocalStorage Dual-Engine) ---------- */
+    const SUPABASE_CONFIG_KEY = "bu_pudak_supabase_cfg";
+    let supabaseClient = null;
 
-    function simpanPesanan(order) {
+    function initSupabase() {
+      const savedCfg = JSON.parse(localStorage.getItem(SUPABASE_CONFIG_KEY) || "{}");
+      const url = savedCfg.url || window.DEFAULT_SUPABASE_URL || "";
+      const key = savedCfg.key || window.DEFAULT_SUPABASE_KEY || "";
+
+      if (url && key && window.supabase) {
+        try {
+          supabaseClient = window.supabase.createClient(url, key);
+          updateSupabaseStatusUI(true, url);
+          setupRealtimeOrders();
+        } catch (e) {
+          console.error("Supabase init error:", e);
+          updateSupabaseStatusUI(false);
+        }
+      } else {
+        updateSupabaseStatusUI(false);
+      }
+    }
+
+    function updateSupabaseStatusUI(isConnected, url = "") {
+      const badge = document.getElementById("supabaseStatusBadge");
+      const desc = document.getElementById("supabaseStatusDesc");
+      if (!badge) return;
+
+      if (isConnected) {
+        badge.textContent = "✅ Terhubung (Cloud Sync Aktif)";
+        badge.style.background = "#dcfce7";
+        badge.style.color = "#15803d";
+        if (desc) desc.textContent = "Pesanan dari semua HP pembeli otomatis masuk ke sini secara real-time via Supabase Cloud.";
+      } else {
+        badge.textContent = "⚠️ Belum Tersambung (Mode Lokal)";
+        badge.style.background = "#fef3c7";
+        badge.style.color = "#b45309";
+        if (desc) desc.textContent = "Sambungkan ke Supabase (Gratis) agar pesanan dari semua HP pembeli otomatis masuk ke sini secara real-time.";
+      }
+    }
+
+    async function simpanPesanan(order) {
+      // 1. Simpan cadangan di storage lokal
       try {
         const existing = JSON.parse(localStorage.getItem(STORAGE_ORDERS_KEY) || "[]");
         existing.unshift(order);
         localStorage.setItem(STORAGE_ORDERS_KEY, JSON.stringify(existing));
-        return true;
       } catch (e) {
-        console.error("Gagal simpan ke localStorage:", e);
-        return false;
+        console.error("Gagal simpan lokal:", e);
       }
+
+      // 2. Simpan ke Database Cloud Supabase (Realtime Sync)
+      if (supabaseClient) {
+        try {
+          const { error } = await supabaseClient.from('orders').insert([{
+            id: order.id,
+            waktu: order.waktu,
+            waktu_formatted: order.waktuFormatted,
+            nama: order.nama,
+            hp: order.hp,
+            alamat: order.alamat,
+            metode_ambil: order.metodeAmbil,
+            metode_bayar: order.metodeBayar,
+            metode_bayar_text: order.metodeBayarText,
+            items: order.items,
+            subtotal: order.subtotal,
+            ongkir: order.ongkir,
+            total: order.total,
+            status: order.status
+          }]);
+          if (error) console.error("Supabase insert error:", error);
+        } catch (err) {
+          console.error("Supabase network error:", err);
+        }
+      }
+      return true;
     }
 
-    function muatRiwayat() {
+    async function muatRiwayat() {
+      // Prioritas 1: Ambil data terbaru dari Supabase Cloud
+      if (supabaseClient) {
+        try {
+          const { data, error } = await supabaseClient
+            .from('orders')
+            .select('*')
+            .order('waktu', { ascending: false });
+
+          if (!error && data) {
+            return data.map(d => ({
+              id: d.id,
+              waktu: d.waktu,
+              waktuFormatted: d.waktu_formatted || d.waktu,
+              nama: d.nama,
+              hp: d.hp,
+              alamat: d.alamat,
+              metodeAmbil: d.metode_ambil,
+              metodeBayar: d.metode_bayar,
+              metodeBayarText: d.metode_bayar_text,
+              items: typeof d.items === 'string' ? JSON.parse(d.items) : d.items,
+              subtotal: Number(d.subtotal),
+              ongkir: Number(d.ongkir),
+              total: Number(d.total),
+              status: d.status
+            }));
+          }
+        } catch (e) {
+          console.warn("Supabase fetch failed, fallback ke lokal:", e);
+        }
+      }
+
+      // Prioritas 2: Fallback ke storage lokal
       try {
         const data = JSON.parse(localStorage.getItem(STORAGE_ORDERS_KEY) || "[]");
         return Array.isArray(data) ? data : [];
       } catch (e) {
-        console.error("Gagal baca riwayat:", e);
         return [];
       }
     }
 
-    function ubahStatus(orderId) {
-      const orders = muatRiwayat();
+    async function ubahStatus(orderId) {
+      const orders = await muatRiwayat();
       const target = orders.find(o => o.id === orderId);
       if (target) {
-        target.status = target.status === "selesai" ? "baru" : "selesai";
+        const newStatus = target.status === "selesai" ? "baru" : "selesai";
+        target.status = newStatus;
+
+        // Update lokal
         localStorage.setItem(STORAGE_ORDERS_KEY, JSON.stringify(orders));
+
+        // Update Supabase Cloud
+        if (supabaseClient) {
+          try {
+            await supabaseClient.from('orders').update({ status: newStatus }).eq('id', orderId);
+          } catch (e) {
+            console.error("Supabase update error:", e);
+          }
+        }
         renderOrderList(orders);
       }
     }
 
-    function hapusSemuaRiwayat() {
+    async function hapusSemuaRiwayat() {
       if (confirm("Apakah Anda yakin ingin menghapus seluruh riwayat pesanan?")) {
         localStorage.removeItem(STORAGE_ORDERS_KEY);
+        if (supabaseClient) {
+          try {
+            await supabaseClient.from('orders').delete().neq('id', 'dummy_keep');
+          } catch (e) {
+            console.error("Supabase delete error:", e);
+          }
+        }
         renderOrderList([]);
+      }
+    }
+
+    function setupRealtimeOrders() {
+      if (supabaseClient) {
+        try {
+          supabaseClient
+            .channel('schema-db-changes')
+            .on(
+              'postgres_changes',
+              { event: '*', schema: 'public', table: 'orders' },
+              async () => {
+                if (document.getElementById('adminView').style.display === 'block') {
+                  const orders = await muatRiwayat();
+                  renderOrderList(orders);
+                }
+              }
+            )
+            .subscribe();
+        } catch (e) {
+          console.warn("Realtime setup notice:", e);
+        }
       }
     }
 
@@ -1625,7 +1800,7 @@
       });
     }
 
-    function bukaAdminView() {
+    async function bukaAdminView() {
       const pin = prompt("Masukkan PIN pemilik toko:");
       if (pin === null) return;
       if (pin !== PIN_PEMILIK) { alert("PIN salah."); return; }
@@ -1633,7 +1808,7 @@
       document.getElementById("adminView").style.display = "block";
       document.getElementById("mobileBar").style.display = "none";
 
-      const orders = muatRiwayat();
+      const orders = await muatRiwayat();
       renderOrderList(orders);
     }
 
@@ -1647,12 +1822,60 @@
       renderNota();
     });
 
-    document.getElementById("refreshBtn").addEventListener("click", () => {
-      const orders = muatRiwayat();
+    document.getElementById("refreshBtn").addEventListener("click", async () => {
+      document.getElementById("orderList").innerHTML = `<div class="loading-state">Memuat data terbaru...</div>`;
+      const orders = await muatRiwayat();
       renderOrderList(orders);
     });
 
     document.getElementById("clearHistoryBtn").addEventListener("click", hapusSemuaRiwayat);
+
+    // Supabase Modal Event Listeners
+    document.getElementById("btnConfigSupabase").addEventListener("click", () => {
+      const savedCfg = JSON.parse(localStorage.getItem(SUPABASE_CONFIG_KEY) || "{}");
+      document.getElementById("sbUrlInput").value = savedCfg.url || "";
+      document.getElementById("sbKeyInput").value = savedCfg.key || "";
+      document.getElementById("supabaseModal").style.display = "flex";
+    });
+
+    document.getElementById("btnCloseSupabaseModal").addEventListener("click", () => {
+      document.getElementById("supabaseModal").style.display = "none";
+    });
+
+    document.getElementById("supabaseConfigForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const url = document.getElementById("sbUrlInput").value.trim();
+      const key = document.getElementById("sbKeyInput").value.trim();
+
+      if (!url || !key) return;
+
+      localStorage.setItem(SUPABASE_CONFIG_KEY, JSON.stringify({ url, key }));
+      initSupabase();
+      document.getElementById("supabaseModal").style.display = "none";
+      alert("✅ Berhasil menghubungkan Database Supabase Cloud!");
+
+      const orders = await muatRiwayat();
+      renderOrderList(orders);
+    });
+
+    document.getElementById("btnDisconnectSupabase").addEventListener("click", async () => {
+      if (confirm("Putuskan koneksi ke Supabase Cloud?")) {
+        localStorage.removeItem(SUPABASE_CONFIG_KEY);
+        supabaseClient = null;
+        updateSupabaseStatusUI(false);
+        document.getElementById("supabaseModal").style.display = "none";
+        alert("Koneksi Supabase diputuskan. Menggunakan mode penyimpanan lokal.");
+        const orders = await muatRiwayat();
+        renderOrderList(orders);
+      }
+    });
+
+    // Close modal when clicking outside box
+    document.getElementById("supabaseModal").addEventListener("click", (e) => {
+      if (e.target.id === "supabaseModal") {
+        document.getElementById("supabaseModal").style.display = "none";
+      }
+    });
 
     // Search & Categories
     document.getElementById("searchInput").addEventListener("input", (e) => {
@@ -1696,32 +1919,8 @@
       document.getElementById("nama").focus();
     });
 
-    // Seed mock initial order if storage empty
-    if (muatRiwayat().length === 0) {
-      const sampleOrder = {
-        id: "BP-260829-101",
-        waktu: new Date().toISOString(),
-        waktuFormatted: "29 Ags 2026 · 07:30 WIB",
-        nama: "Ibu Hj. Aminah (Contoh)",
-        hp: "081298765432",
-        alamat: "Bumbu rendang cabai sedang, ambil jam 09:00",
-        metodeAmbil: "pickup",
-        metodeBayar: "cash",
-        metodeBayarText: "💵 Bayar di Outlet / Tunai",
-        items: [
-          { nama: "Bumbu Rendang Padang (Giling)", qty: 2, satuan: "1/4 kg", harga: 15000, subtotal: 30000 },
-          { nama: "Bawang Merah Brebes", qty: 3, satuan: "ons", harga: 8000, subtotal: 24000 },
-          { nama: "Kelapa Parut Segar", qty: 1, satuan: "butir", harga: 9000, subtotal: 9000 }
-        ],
-        subtotal: 63000,
-        ongkir: 0,
-        total: 63000,
-        status: "baru"
-      };
-      simpanPesanan(sampleOrder);
-    }
-
-    // Initial render
+    // Initial render & Cloud DB setup
+    initSupabase();
     renderProducts();
     renderNota();
   </script>
