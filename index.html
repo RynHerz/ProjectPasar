@@ -1268,32 +1268,11 @@
       };
     }
 
-    /* ---------- Database Cloud Sync (Supabase & LocalStorage Dual-Engine) ---------- */
-    const SUPABASE_CONFIG_KEY = "bu_pudak_supabase_cfg";
-    const DEFAULT_SUPABASE_URL = "https://ijqopurrtoyhgxtmsimy.supabase.co";
-    const DEFAULT_SUPABASE_KEY = "sb_publishable_wJ-K-hw_zy1UU1fZtKP9gA_G0qD42dE";
-    let supabaseClient = null;
+    /* ---------- Database Cloud Sync (Direct Native REST Engine) ---------- */
+    const SUPABASE_BASE_URL = "https://ijqopurrtoyhgxtmsimy.supabase.co/rest/v1";
+    const SUPABASE_KEY = "sb_publishable_wJ-K-hw_zy1UU1fZtKP9gA_G0qD42dE";
 
-    function initSupabase() {
-      const savedCfg = JSON.parse(localStorage.getItem(SUPABASE_CONFIG_KEY) || "{}");
-      const url = (savedCfg && savedCfg.url && savedCfg.url.trim()) ? savedCfg.url.trim() : DEFAULT_SUPABASE_URL;
-      const key = (savedCfg && savedCfg.key && savedCfg.key.trim()) ? savedCfg.key.trim() : DEFAULT_SUPABASE_KEY;
-
-      if (url && key && window.supabase) {
-        try {
-          supabaseClient = window.supabase.createClient(url, key);
-          updateSupabaseStatusUI(true, url);
-          setupRealtimeOrders();
-        } catch (e) {
-          console.error("Supabase init error:", e);
-          updateSupabaseStatusUI(false);
-        }
-      } else {
-        updateSupabaseStatusUI(false);
-      }
-    }
-
-    function updateSupabaseStatusUI(isConnected, url = "") {
+    function updateSupabaseStatusUI(isConnected) {
       const badge = document.getElementById("supabaseStatusBadge");
       const desc = document.getElementById("supabaseStatusDesc");
       if (!badge) return;
@@ -1321,16 +1300,23 @@
         console.error("Gagal simpan lokal:", e);
       }
 
-      // 2. Simpan ke Database Cloud Supabase (Realtime Sync)
-      if (supabaseClient) {
-        try {
-          const { error } = await supabaseClient.from('orders').insert([{
+      // 2. Simpan langsung ke Supabase Cloud via REST POST
+      try {
+        await fetch(`${SUPABASE_BASE_URL}/orders`, {
+          method: "POST",
+          headers: {
+            "apikey": SUPABASE_KEY,
+            "Authorization": `Bearer ${SUPABASE_KEY}`,
+            "Content-Type": "application/json",
+            "Prefer": "return=representation"
+          },
+          body: JSON.stringify({
             id: order.id,
             waktu: order.waktu,
             waktu_formatted: order.waktuFormatted,
             nama: order.nama,
             hp: order.hp,
-            alamat: order.alamat,
+            alamat: order.alamat || "",
             metode_ambil: order.metodeAmbil,
             metode_bayar: order.metodeBayar,
             metode_bayar_text: order.metodeBayarText,
@@ -1339,41 +1325,39 @@
             ongkir: order.ongkir,
             total: order.total,
             status: order.status
-          }]);
-          if (error) console.error("Supabase insert error:", error);
-        } catch (err) {
-          console.error("Supabase network error:", err);
-        }
+          })
+        });
+      } catch (err) {
+        console.error("REST Insert Error:", err);
       }
       return true;
     }
 
     async function muatRiwayat() {
-      // Pastikan Supabase Client sudah aktif
-      if (!supabaseClient) {
-        initSupabase();
-      }
+      // Prioritas 1: Ambil data live langsung dari Supabase Cloud via REST GET
+      try {
+        const res = await fetch(`${SUPABASE_BASE_URL}/orders?select=*&order=waktu.desc`, {
+          headers: {
+            "apikey": SUPABASE_KEY,
+            "Authorization": `Bearer ${SUPABASE_KEY}`
+          }
+        });
 
-      // Prioritas 1: Ambil data live langsung dari Supabase Cloud
-      if (supabaseClient) {
-        try {
-          const { data, error } = await supabaseClient
-            .from('orders')
-            .select('*')
-            .order('waktu', { ascending: false });
-
-          if (!error && data) {
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) {
+            updateSupabaseStatusUI(true);
             const parsed = data.map(d => ({
               id: d.id,
               waktu: d.waktu,
               waktuFormatted: d.waktu_formatted || d.waktu,
               nama: d.nama,
               hp: d.hp,
-              alamat: d.alamat,
+              alamat: d.alamat || "",
               metodeAmbil: d.metode_ambil,
               metodeBayar: d.metode_bayar,
               metodeBayarText: d.metode_bayar_text,
-              items: typeof d.items === 'string' ? JSON.parse(d.items) : d.items,
+              items: typeof d.items === 'string' ? JSON.parse(d.items) : (d.items || []),
               subtotal: Number(d.subtotal),
               ongkir: Number(d.ongkir),
               total: Number(d.total),
@@ -1384,9 +1368,9 @@
             localStorage.setItem(STORAGE_ORDERS_KEY, JSON.stringify(parsed));
             return parsed;
           }
-        } catch (e) {
-          console.warn("Supabase fetch notice, fallback ke lokal:", e);
         }
+      } catch (e) {
+        console.warn("REST fetch notice, fallback ke lokal:", e);
       }
 
       // Prioritas 2: Fallback ke storage lokal jika sedang offline
@@ -1407,51 +1391,40 @@
 
         // Update lokal
         localStorage.setItem(STORAGE_ORDERS_KEY, JSON.stringify(orders));
-
-        // Update Supabase Cloud
-        if (supabaseClient) {
-          try {
-            await supabaseClient.from('orders').update({ status: newStatus }).eq('id', orderId);
-          } catch (e) {
-            console.error("Supabase update error:", e);
-          }
-        }
         renderOrderList(orders);
+
+        // Update Supabase Cloud via REST PATCH
+        try {
+          await fetch(`${SUPABASE_BASE_URL}/orders?id=eq.${orderId}`, {
+            method: "PATCH",
+            headers: {
+              "apikey": SUPABASE_KEY,
+              "Authorization": `Bearer ${SUPABASE_KEY}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ status: newStatus })
+          });
+        } catch (e) {
+          console.error("Supabase update error:", e);
+        }
       }
     }
 
     async function hapusSemuaRiwayat() {
       if (confirm("Apakah Anda yakin ingin menghapus seluruh riwayat pesanan?")) {
         localStorage.removeItem(STORAGE_ORDERS_KEY);
-        if (supabaseClient) {
-          try {
-            await supabaseClient.from('orders').delete().neq('id', 'dummy_keep');
-          } catch (e) {
-            console.error("Supabase delete error:", e);
-          }
-        }
         renderOrderList([]);
-      }
-    }
 
-    function setupRealtimeOrders() {
-      if (supabaseClient) {
         try {
-          supabaseClient
-            .channel('schema-db-changes')
-            .on(
-              'postgres_changes',
-              { event: '*', schema: 'public', table: 'orders' },
-              async () => {
-                if (document.getElementById('adminView').style.display === 'block') {
-                  const orders = await muatRiwayat();
-                  renderOrderList(orders);
-                }
-              }
-            )
-            .subscribe();
+          await fetch(`${SUPABASE_BASE_URL}/orders?id=neq.dummy_keep`, {
+            method: "DELETE",
+            headers: {
+              "apikey": SUPABASE_KEY,
+              "Authorization": `Bearer ${SUPABASE_KEY}`
+            }
+          });
         } catch (e) {
-          console.warn("Realtime setup notice:", e);
+          console.error("Supabase delete error:", e);
         }
       }
     }
